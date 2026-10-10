@@ -1,0 +1,17 @@
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# PyCharm personal settings
+.idea/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
