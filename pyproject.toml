@@ -7,5 +7,6 @@ dependencies = [
     "matplotlib",
     "numpy",
     "pandas",
-    "scipy"
+    "scipy",
+    "streamlit>=1.65.0",
 ]
