@@ -1,5 +1,4 @@
 import streamlit as st
-import numpy as np
 st.set_page_config(page_title="Skyentist Front",
                    page_icon="💫",
                    layout="wide")
@@ -13,4 +12,5 @@ app_mode=st.sidebar.selectbox(
      "Scientific Plots & Data",
      "Astrophotography Gallery"])
 
+st.image("picos_econtraddos.png")
 #if app_mode=="List of molecules detrected":
