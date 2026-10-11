@@ -1,8 +1,8 @@
 # Fdb version 4
-["pdflatex"] 1791724209.40685 "c:/Users/agent/OneDrive/Pictures/AstroHack/Skyntists/Entregables/reporte.tex" "build/reporte.pdf" "reporte" 1791724212.51295 0
-  "build/reporte.aux" 1791724212 1461 99dffbd11fb7e3a4133314d3ff1e2153 "pdflatex"
-  "build/reporte.out" 1791724212 904 81d3f9351765c3709223b89fb654435c "pdflatex"
-  "c:/Users/agent/OneDrive/Pictures/AstroHack/Skyntists/Entregables/reporte.tex" 1791724204 9077 01a9d5b70460ab68124d5ab33ab47ccd ""
+["pdflatex"] 1791726838.95746 "c:/Users/agent/OneDrive/Pictures/AstroHack/Skyntists/Entregables/reporte.tex" "build/reporte.pdf" "reporte" 1791726841.81896 0
+  "build/reporte.aux" 1791726841 1461 99dffbd11fb7e3a4133314d3ff1e2153 "pdflatex"
+  "build/reporte.out" 1791726841 904 81d3f9351765c3709223b89fb654435c "pdflatex"
+  "c:/Users/agent/OneDrive/Pictures/AstroHack/Skyntists/Entregables/reporte.tex" 1791726834 9118 2d57843eb09076f583badb5ea9b15015 ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1784297867 2971 def0b6c1f0b107b3b936def894055589 ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1784297867 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "c:/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1784304772 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -17,6 +17,7 @@
   "c:/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/ectt0900.tfm" 1784302080 1536 ae7aab2f8a4bc9edfce2899f53ba88c3 ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/ectt1000.tfm" 1784302080 1536 06717a2b50de47d4087ac0e6cd759455 ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1784302080 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
+  "c:/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/tcrm1200.tfm" 1784302080 1536 74b7293ec3713bb7fdca8dd1bd1f469c ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmmi6.tfm" 1784297820 1512 f21f83efb36853c0b70002322c1ab3ad ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmmi9.tfm" 1784297820 1524 d89e2d087a9828407a196f428428ef4a ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmr6.tfm" 1784297820 1300 b62933e007d01cfd073f79b963c01526 ""
@@ -99,7 +100,7 @@
   "c:/texlive/2026/texmf.cnf" 1784327356 713 e69b156964470283e0530f5060668171 ""
   "figuras/espectros_completos.png" 1791712679 557779 e0e64985f0adcaca38f84afc94f7154c ""
   "figuras/perfiles_candidatos.png" 1791714156 350971 7e23a87f2b0b4ed87c3d2ea1c901a3db ""
-  "reporte.tex" 1791724204 9077 01a9d5b70460ab68124d5ab33ab47ccd ""
+  "reporte.tex" 1791726834 9118 2d57843eb09076f583badb5ea9b15015 ""
   (generated)
   "build/reporte.aux"
   "build/reporte.log"

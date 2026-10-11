@@ -25,6 +25,8 @@ Proyecto de análisis exploratorio de espectros milimétricos de **IRAS 16293−
 - **[Repositorio público de la aplicación](https://github.com/YarekAlejandro/skyntists-streamlit)**: paquete mínimo que Streamlit Community Cloud usa para publicar la web.
 - **Cuaderno científico**: [`herramientas/Inicio_AstroHack.ipynb`](herramientas/Inicio_AstroHack.ipynb).
 - **Evidencia tabulada**: [`Entregables/Campos_de_evidencia.csv`](Entregables/Campos_de_evidencia.csv).
+- **Informe breve**: [`Entregables/reporte.pdf`](Entregables/reporte.pdf), con fuente [`reporte.tex`](Entregables/reporte.tex).
+- **Memoria técnica ampliada**: [`Entregables/reporte_tecnico.pdf`](Entregables/reporte_tecnico.pdf) y su [fuente LaTeX](Entregables/reporte_tecnico.tex) (documento complementario).
 - **Reproducibilidad y limitaciones**: [`Entregables/README_reproducibilidad.md`](Entregables/README_reproducibilidad.md).
 
 La aplicación está diseñada como una wiki interactiva del trabajo: permite filtrar candidatos y extracción, inspeccionar espectros con hover y ampliar regiones; también explica de dónde vienen los datos, cómo se construyó la evidencia y qué conclusiones no se pueden extraer. La presentación `.pptx` se mantiene como entregable independiente.

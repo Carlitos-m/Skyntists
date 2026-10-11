@@ -3,7 +3,7 @@
 ## Contenido
 - `herramientas/Inicio_AstroHack.ipynb`: validación de extracción, búsqueda de rasgos, comparación espectroscópica, ajustes descriptivos y exportación de evidencia/figuras.
 - `Entregables/Campos_de_evidencia.csv`: mediciones por hipótesis y decisión; glicina-I permanece insuficiente.
-- `Entregables/reporte.pdf` y `.tex`: reporte y fuente. `presentacion.pptx`: defensa de 5 min.
+- `Entregables/reporte.pdf` y `reporte.tex`: informe breve para la convocatoria. `Entregables/reporte_tecnico.pdf` y `.tex`: memoria técnica ampliada complementaria. `presentacion.pptx`: defensa de 5 min.
 - `espectros/` y `cubos/`: datos originales necesarios, incluidos una sola vez.
 
 ## Ejecución
