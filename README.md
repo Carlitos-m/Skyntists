@@ -48,6 +48,14 @@ Los espectros proceden de datos de ALMA del proyecto `ADS/JAO.ALMA#2013.1.00278.
 El catálogo incluido es parcial: la ausencia de una transición en él no descarta una molécula, y una coincidencia aislada no la confirma. Las líneas pueden estar mezcladas o confundidas; la calidad de calibración, resolución y cobertura limita las conclusiones. Este análisis no estima abundancias, no determina por sí solo temperatura y no detecta vida.
 
 ## Estructura del repositorio
+- `streamlit_app.py`: app Streamlit.
+- `herramientas/Inicio_AstroHack.ipynb`: análisis reproducible.
+- `espectros/`: espectros calibrados W1/W2 usados por notebook y app.
+- `cubos/`: cubos FITS para validar la extracción en el notebook.
+- `catalogos/`: selección y procedencia de frecuencias.
+- `Entregables/`: evidencia, figuras, reporte PDF/LaTeX y presentación.
+- `Entregables/README_reproducibilidad.md`: detalle de reproducción y límites.
+- `Entregables/CONTRIBUCIONES.md`: aportaciones individuales pendientes de completar por el equipo.
 
 | Ruta | Contenido |
 | --- | --- |
