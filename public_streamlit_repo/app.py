@@ -3,10 +3,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from scipy.optimize import curve_fit
+
+from line_statistics import (
+    assess_molecular_evidence,
+    catalog_associations,
+    detect_features,
+    sigma_differences,
+)
 
 ROOT = Path(__file__).resolve().parent
 SPECTRA_DIR = ROOT / "espectros" if (ROOT / "espectros").exists() else ROOT
@@ -16,6 +25,9 @@ if not EVIDENCE_PATH.exists():
 CATALOG_PATH = ROOT / "catalogos" / "procedencia_catalogos.json"
 if not CATALOG_PATH.exists():
     CATALOG_PATH = ROOT / "procedencia_catalogos.json"
+LINE_CATALOG_PATH = ROOT / "catalogos" / "catalogo_local_prebioticas.csv"
+if not LINE_CATALOG_PATH.exists():
+    LINE_CATALOG_PATH = ROOT / "catalogo_local_prebioticas.csv"
 C_KMS = 299_792.458
 V_SYSTEM_KMS = 2.7
 POSITIONS = {
@@ -79,6 +91,106 @@ def load_evidence() -> pd.DataFrame:
     return frame
 
 
+@st.cache_data(show_spinner=False)
+def enrich_evidence_with_residual_rmse(frame: pd.DataFrame) -> pd.DataFrame:
+    """Estimate local fit residual RMSE and scale it by robust channel noise.
+
+    This is a fit-diagnostic metric. It is not a formal noise classifier,
+    goodness-of-fit probability, or molecular detection statistic.
+    """
+    result = frame.copy()
+    rmse_values: list[float] = []
+    noise_values: list[float] = []
+
+    def gaussian_with_baseline(x, amplitude, center, width, baseline):
+        return baseline + amplitude * np.exp(-0.5 * ((x - center) / width) ** 2)
+
+    for _, row in result.iterrows():
+        try:
+            window = int(str(row["ventana"]).upper().replace("W", ""))
+            position = str(row.get("posicion", "B_offset"))
+            intensity_column = POSITIONS.get(position, POSITIONS["B_offset"])[0]
+            rest_frequency = float(row["frecuencia_reposo_MHz"])
+            spectrum = load_spectrum(window)
+            frequency = spectrum["frecuencia_LSRK_GHz"].to_numpy(dtype=float) * 1000
+            intensity = spectrum[intensity_column].to_numpy(dtype=float)
+            velocity = C_KMS * (1 - frequency / rest_frequency)
+            selected = np.isfinite(velocity) & np.isfinite(intensity) & (velocity >= 0) & (velocity <= 5)
+            x, observed = velocity[selected], intensity[selected]
+            sigma = sigma_differences(intensity)
+            if len(x) < 9 or not np.isfinite(sigma) or sigma <= 0:
+                rmse_values.append(np.nan)
+                noise_values.append(sigma)
+                continue
+
+            baseline = float(np.median(observed))
+            amplitude = max(float(np.max(observed) - baseline), np.finfo(float).eps)
+            initial_center = float(x[int(np.argmax(observed))])
+            parameters, _ = curve_fit(
+                gaussian_with_baseline,
+                x,
+                observed,
+                p0=[amplitude, initial_center, 0.5, baseline],
+                bounds=([0, 0, 0.1, -np.inf], [np.inf, 5, 3, np.inf]),
+                maxfev=20_000,
+            )
+            residuals = observed - gaussian_with_baseline(x, *parameters)
+            rmse_values.append(float(np.sqrt(np.mean(residuals**2))))
+            noise_values.append(float(sigma))
+        except (KeyError, TypeError, ValueError, RuntimeError, OverflowError):
+            rmse_values.append(np.nan)
+            noise_values.append(np.nan)
+
+    result["rmse_residuos_Jy_beam"] = rmse_values
+    result["sigma_ruido_aprox_Jy_beam"] = noise_values
+    result["rmse_en_sigmas"] = result["rmse_residuos_Jy_beam"] / result["sigma_ruido_aprox_Jy_beam"]
+    return result
+
+
+@st.cache_data(show_spinner=False)
+def load_line_catalog() -> pd.DataFrame:
+    if not LINE_CATALOG_PATH.exists():
+        return pd.DataFrame()
+    frame = pd.read_csv(LINE_CATALOG_PATH, dtype={"entrada": str})
+    frame["frecuencia_reposo_MHz"] = pd.to_numeric(frame["frecuencia_reposo_MHz"], errors="coerce")
+    frame["incertidumbre_MHz"] = pd.to_numeric(frame["incertidumbre_MHz"], errors="coerce")
+    return frame.dropna(subset=["especie", "frecuencia_reposo_MHz"])
+
+
+@st.cache_data(show_spinner="Comparando el catálogo con desplazamientos nulos…")
+def run_interactive_analysis(
+    window: int,
+    position: str,
+    threshold_sigma: float,
+    velocity_kms: float,
+    velocity_margin_kms: float,
+    min_distance: int,
+) -> tuple[pd.DataFrame, float, float, pd.DataFrame, pd.DataFrame, tuple[float, float, float]]:
+    frame = load_spectrum(window)
+    frequency = frame["frecuencia_LSRK_GHz"].to_numpy(dtype=float) * 1000
+    intensity = frame[POSITIONS[position][0]].to_numpy(dtype=float)
+    peaks, sigma, step = detect_features(
+        frequency, intensity, threshold_sigma=threshold_sigma,
+        min_distance_channels=min_distance,
+    )
+    band = {window: (float(frequency.min()), float(frequency.max()), step)}
+    peak_map = {window: peaks}
+    catalog = load_line_catalog()
+    if catalog.empty:
+        empty = pd.DataFrame()
+        return peaks, sigma, step, empty, empty, band[window]
+    summary, _ = assess_molecular_evidence(
+        catalog, band, peak_map, velocity_kms=velocity_kms,
+        velocity_margin_kms=velocity_margin_kms, min_snr=threshold_sigma,
+        simulations=1000, random_state=20261011,
+    )
+    associations = catalog_associations(
+        catalog, band, peak_map, velocity_kms=velocity_kms,
+        velocity_margin_kms=velocity_margin_kms, min_snr=threshold_sigma,
+    )
+    return peaks, sigma, step, summary, associations, band[window]
+
+
 def plot_layout(fig: go.Figure, height: int = 470) -> go.Figure:
     fig.update_layout(
         height=height, template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)",
@@ -97,14 +209,6 @@ except Exception as exc:
     st.error(f"No se pudo leer la evidencia: {exc}")
     st.stop()
 
-st.markdown("""
-<div class="hero">
- <div class="hero-kicker">Guía interactiva · AstroHack SATEM 2026</div>
- <h1>🔭 Skyntists</h1>
- <p>Un recorrido reproducible por los espectros de IRAS 16293−2422: del dato calibrado a una hipótesis molecular, haciendo visibles la evidencia, las decisiones y sus límites.</p>
-</div>
-""", unsafe_allow_html=True)
-
 if evidence.empty:
     st.error("No está disponible Campos_de_evidencia.csv; revisa los archivos del despliegue.")
     st.stop()
@@ -112,23 +216,29 @@ if evidence.empty:
 confirmed = int(evidence["decision"].astype(str).str.contains("Tentativa", case=False).sum())
 species_n = evidence["especie"].nunique() if "especie" in evidence else 0
 windows_n = evidence["ventana"].nunique() if "ventana" in evidence else 0
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Ventanas ALMA", f"{windows_n}", help="W1 y W2; sus haces y escalas de intensidad son distintos.")
-m2.metric("Canales", "1,918 / ventana")
-m3.metric("Perfiles evaluados", f"{len(evidence)}", help="Incluye candidatos tentativos y el caso de glicina-I insuficiente.")
-m4.metric("Compatibilidad tentativa", f"{confirmed} perfiles", help="No son identificaciones confirmadas ni una probabilidad molecular.")
-
-st.markdown('<div class="callout"><b>Qué podemos afirmar:</b> seis perfiles muestran compatibilidad espectral tentativa con CH₃CN o CH₃CHO bajo el análisis actual. La coincidencia aislada de Glycine-I es insuficiente. Las líneas pueden mezclarse; el catálogo de apoyo es parcial y no se realizó un modelado LTE conjunto.</div>', unsafe_allow_html=True)
-
 with st.sidebar:
     st.markdown("## Skyntists")
     st.caption("Cuaderno de campo digital · IRAS 16293−2422")
-    page = st.radio("Explorar", ["Inicio", "Espectros", "Evidencia molecular", "Método paso a paso", "Glosario y fuentes"], label_visibility="collapsed", key="wiki_page")
+    page = st.radio("Explorar", ["Inicio", "Espectros", "Evidencia molecular", "Demostración Doppler", "Clasificación de ruido", "Método paso a paso", "Glosario y fuentes"], label_visibility="collapsed", key="wiki_page")
     st.divider()
     st.markdown("**Pregunta guía**")
     st.caption("¿Qué especies moleculares son compatibles con los rasgos espectrales observados?")
     st.caption(f"Datos cargados: {len(evidence)} filas de evidencia · {windows_n} ventanas")
 
+if page == "Inicio":
+    st.markdown("""
+    <div class="hero">
+     <div class="hero-kicker">Guía interactiva · AstroHack SATEM 2026</div>
+     <h1>🔭 Skyntists</h1>
+     <p>Un recorrido reproducible por los espectros de IRAS 16293−2422: del dato calibrado a una hipótesis molecular, haciendo visibles la evidencia, las decisiones y sus límites.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Ventanas ALMA", f"{windows_n}", help="W1 y W2; sus haces y escalas de intensidad son distintos.")
+    m2.metric("Canales", "1,918 / ventana")
+    m3.metric("Perfiles evaluados", f"{len(evidence)}", help="Incluye candidatos tentativos y el caso de glicina-I insuficiente.")
+    m4.metric("Compatibilidad tentativa", f"{confirmed} perfiles", help="No son identificaciones confirmadas ni una probabilidad molecular.")
+    st.markdown('<div class="callout"><b>Qué podemos afirmar:</b> seis perfiles muestran compatibilidad espectral tentativa con CH₃CN o CH₃CHO bajo el análisis actual. La coincidencia aislada de Glycine-I es insuficiente. Las líneas pueden mezclarse; el catálogo de apoyo es parcial y no se realizó un modelado LTE conjunto.</div>', unsafe_allow_html=True)
 
 if page == "Inicio":
     st.subheader("Del espectro a la hipótesis")
@@ -154,7 +264,7 @@ if page == "Inicio":
         st.write("El SNR informado es el contraste local aproximado del perfil respecto al ruido estimado. Un SNR alto señala una estructura destacada en ese intervalo; no mide la probabilidad de que sea una especie concreta.")
         st.info("Identificación robusta requiere varias transiciones independientes, consistencia entre líneas, tratamiento de blends y comparación con alternativas. La app conserva esta distinción en cada visualización.")
     st.markdown("### Ruta de lectura")
-    st.write("1. Empieza en **Espectros** y selecciona un rasgo; 2. revisa la comparación de frecuencias en **Evidencia molecular**; 3. sigue las ecuaciones y supuestos en **Método paso a paso**; 4. consulta términos y referencias en **Glosario y fuentes**.")
+    st.write("1. Empieza en **Espectros** y selecciona un rasgo; 2. revisa la comparación de frecuencias en **Evidencia molecular**; 3. inspecciona los ajustes en **Clasificación de ruido**; 4. sigue las ecuaciones y supuestos en **Método paso a paso**; 5. consulta términos y referencias en **Glosario y fuentes**.")
 
 
 elif page == "Espectros":
@@ -239,6 +349,268 @@ elif page == "Evidencia molecular":
         st.warning("No hay filas para los filtros seleccionados.")
 
 
+elif page == "Demostración Doppler":
+    st.subheader("Demostración interactiva: ¿se alinean las líneas?")
+    st.markdown(
+        "Mueve el umbral de detección y la velocidad sistémica. El gráfico vuelve a detectar picos y desplaza las frecuencias de catálogo; "
+        "las guías verdes indican transiciones asociadas bajo la tolerancia seleccionada y las ámbar, transiciones sin asociación."
+    )
+    catalog = load_line_catalog()
+    if catalog.empty:
+        st.error("No está disponible el catálogo local de frecuencias para esta demostración.")
+    else:
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            demo_window = st.selectbox("Ventana espectral", [1, 2], format_func=lambda value: f"W{value}", key="demo_window")
+            demo_position = st.selectbox("Extracción", list(POSITIONS), index=0, format_func=lambda value: POSITIONS[value][1], key="demo_position")
+        with c2:
+            demo_threshold = st.slider("Umbral de prominencia (σ local)", 3.0, 10.0, 5.0, 0.5, key="demo_threshold")
+            demo_velocity = st.slider("Velocidad sistémica v (km/s)", 0.0, 6.0, 2.7, 0.05, key="demo_velocity")
+        with c3:
+            demo_margin = st.slider("Margen cinemático ± (km/s)", 0.1, 2.0, 1.0, 0.1, key="demo_margin")
+            demo_distance = st.slider("Separación mínima entre picos (canales)", 1, 12, 3, key="demo_distance")
+
+        species_options = sorted(catalog["especie"].dropna().astype(str).unique())
+        demo_species = st.selectbox("Molécula del catálogo que quieres contrastar", species_options, index=species_options.index("CH3CN") if "CH3CN" in species_options else 0)
+        peaks, demo_sigma, demo_step, grade_table, all_matches, band = run_interactive_analysis(
+            demo_window, demo_position, demo_threshold, demo_velocity, demo_margin, demo_distance
+        )
+        raw = load_spectrum(demo_window)
+        frequency = raw["frecuencia_LSRK_GHz"].to_numpy(dtype=float) * 1000
+        intensity = raw[POSITIONS[demo_position][0]].to_numpy(dtype=float)
+        low, high, step = band
+        molecule_lines = catalog.loc[catalog["especie"].astype(str).eq(demo_species)].copy()
+        peak_frequency = peaks["frecuencia_pico_LSRK_MHz"].to_numpy(dtype=float)
+        transition_rows = []
+        for transition in molecule_lines.itertuples(index=False):
+            rest = float(transition.frecuencia_reposo_MHz)
+            predicted = rest * (1 - demo_velocity / C_KMS)
+            if not low <= predicted <= high:
+                continue
+            catalog_sigma = float(transition.incertidumbre_MHz) if pd.notna(transition.incertidumbre_MHz) and float(transition.incertidumbre_MHz) > 0 else 0.0
+            tolerance = np.sqrt((predicted * demo_margin / C_KMS) ** 2 + catalog_sigma**2 + (step / 2) ** 2)
+            tolerance = min(max(float(tolerance), step), 1.5)
+            if len(peaks):
+                nearest = int(np.argmin(np.abs(peak_frequency - predicted)))
+                found_frequency = float(peak_frequency[nearest])
+                found_snr = float(peaks.iloc[nearest]["SNR_prominencia_aprox"])
+                residual = found_frequency - predicted
+                aligned = abs(residual) <= tolerance and found_snr >= demo_threshold
+                channel = int(peaks.iloc[nearest]["canal"])
+            else:
+                found_frequency, found_snr, residual, aligned, channel = np.nan, np.nan, np.nan, False, None
+            transition_rows.append({
+                "catálogo": str(transition.catalogo),
+                "entrada": str(transition.entrada),
+                "ν reposo (MHz)": rest,
+                "ν predicha LSRK (MHz)": predicted,
+                "pico cercano (MHz)": found_frequency,
+                "residuo (MHz)": residual,
+                "prominencia/σ": found_snr,
+                "tolerancia (MHz)": tolerance,
+                "grupo de rasgo": f"W{demo_window}-{channel}" if channel is not None else "—",
+                "asociación": "alineada" if aligned else "sin asociación",
+            })
+        transitions = pd.DataFrame(transition_rows)
+
+        summary_row = grade_table.loc[grade_table["especie"].eq(demo_species)] if not grade_table.empty else pd.DataFrame()
+        matched_lines = int(transitions["asociación"].eq("alineada").sum()) if not transitions.empty else 0
+        distinct_features = int(summary_row["rasgos_distintos_asociados"].iloc[0]) if not summary_row.empty else 0
+        q_value = float(summary_row["q_BY_12_especies"].iloc[0]) if not summary_row.empty else np.nan
+        grade = str(summary_row["grado_evidencia"].iloc[0]) if not summary_row.empty else "No evaluable"
+        grade_short = {
+            "Compatibilidad tentativa": "Tentativa",
+            "Sugestiva, ambigua": "Ambigua",
+            "Indicio débil; insuficiente para asignar": "Débil",
+            "Sin evidencia suficiente en esta prueba": "Insuf.",
+        }.get(grade, "No evaluable")
+        metrics_top = st.columns(2)
+        metrics_top[0].metric("Ruido σ", f"{demo_sigma:.4f}" if np.isfinite(demo_sigma) else "—", help="Estimación aproximada en Jy/beam a partir de diferencias entre canales.")
+        metrics_top[1].metric("Picos detectados", f"{len(peaks)}", help=f"Máximos con prominencia ≥ {demo_threshold:g}σ local.")
+        metrics_bottom = st.columns(2)
+        metrics_bottom[0].metric("Transiciones asociadas", f"{matched_lines}/{len(transitions)}", help="Transiciones del catálogo local asociadas en esta ventana; no es una tasa de identidad molecular.")
+        metrics_bottom[1].metric("Grado en la ventana", grade_short, help=f"{grade}. Solo para la ventana elegida; no es probabilidad posterior ni la evaluación conjunta W1+W2.")
+        if np.isfinite(q_value):
+            st.caption(f"Para {demo_species} en W{demo_window}: {distinct_features} rasgos distintos asociados · q empírico BY = {q_value:.4g} frente a desplazamientos circulares, corregido por las 12 especies del catálogo local.")
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=frequency, y=intensity, mode="lines", name="Espectro observado",
+            line=dict(color="#60d7c5", width=1.4),
+            hovertemplate="ν=%{x:.5f} MHz<br>I=%{y:.4f} Jy/beam<extra></extra>",
+        ))
+        if len(peaks):
+            fig.add_trace(go.Scatter(
+                x=peak_frequency, y=peaks["pico_Jy_beam"], mode="markers", name="Pico sobre umbral",
+                marker=dict(color="#ffc66d", size=7, line=dict(color="#071522", width=1)),
+                customdata=np.column_stack([peaks["SNR_prominencia_aprox"], peaks["canal"]]),
+                hovertemplate="Pico detectado · canal %{customdata[1]:.0f}<br>ν=%{x:.5f} MHz<br>prominencia/σ=%{customdata[0]:.1f}<extra></extra>",
+            ))
+        if not transitions.empty:
+            y_span = float(np.nanmax(intensity) - np.nanmin(intensity)) or 1.0
+            rug_y = float(np.nanmax(intensity)) + y_span * 0.08
+            marker_y = np.linspace(rug_y, rug_y + y_span * 0.10, len(transitions))
+            colors = ["#55d6c2" if value == "alineada" else "#ffbd69" for value in transitions["asociación"]]
+            marker_hover = [[
+                str(row["entrada"]),
+                float(row["residuo (MHz)"]) if pd.notna(row["residuo (MHz)"]) else np.nan,
+                float(row["prominencia/σ"]) if pd.notna(row["prominencia/σ"]) else np.nan,
+                str(row["asociación"]),
+            ] for _, row in transitions.iterrows()]
+            fig.add_trace(go.Scatter(
+                x=transitions["ν predicha LSRK (MHz)"], y=marker_y, mode="markers", name="Transición de catálogo desplazada",
+                marker=dict(color=colors, size=9, symbol="line-ns-open", line=dict(width=2)),
+                customdata=marker_hover,
+                hovertemplate="Entrada %{customdata[0]}<br>ν predicha=%{x:.5f} MHz<br>residuo=%{customdata[1]} MHz<br>prominencia/σ=%{customdata[2]}<br>%{customdata[3]}<extra></extra>",
+            ))
+            for _, line in transitions.iterrows():
+                color = "#55d6c2" if line["asociación"] == "alineada" else "#ffbd69"
+                fig.add_vline(x=float(line["ν predicha LSRK (MHz)"]), line_color=color, line_width=1, line_dash="dot", opacity=0.42)
+            if len(transitions) > 1:
+                option_labels = [f"{row['entrada']} · {row['ν reposo (MHz)']:.4f} MHz reposo" for _, row in transitions.iterrows()]
+                selected_line = st.selectbox("Centrar la vista en una transición", range(len(transitions)), format_func=lambda idx: option_labels[idx], key="demo_focus_line")
+                center = float(transitions.iloc[selected_line]["ν predicha LSRK (MHz)"])
+                focus_width = st.slider("Semiancho de la vista local (MHz)", 0.5, 15.0, 3.0, 0.5, key="demo_focus_width")
+                fig.update_xaxes(range=[center - focus_width, center + focus_width])
+        fig.update_layout(title=f"W{demo_window} · {demo_species} · v = {demo_velocity:.2f} km/s", xaxis_title="Frecuencia LSRK (MHz)", yaxis_title="Intensidad (Jy/beam)", hovermode="x unified")
+        st.plotly_chart(plot_layout(fig, 565), width="stretch")
+        if not transitions.empty:
+            st.markdown("#### Transiciones cubiertas del catálogo")
+            st.dataframe(transitions, width="stretch", hide_index=True)
+        st.info(
+            "El p/q empírico compara el número de rasgos asociados con patrones de catálogo desplazados circularmente dentro de la misma ventana y corrige por las 12 especies evaluadas. "
+            "Es condicional a los deslizadores seleccionados y no corrige por explorar muchas velocidades; úsalo para sensibilidad visual, no para optimizar v y reportar significancia. **No es el porcentaje de probabilidad de que la molécula esté presente**. "
+            "Los canales pueden estar correlacionados, el catálogo es parcial, las intensidades no se modelan y los blends requieren inspección."
+        )
+
+
+elif page == "Clasificación de ruido":
+    st.subheader("Clasificación del residuo de los ajustes")
+    st.write(
+        "Compara el error residual de una gaussiana con baseline frente a la escala de ruido aproximada del espectro. "
+        "El umbral sirve para priorizar inspección; no es una prueba de significancia ni una clasificación de moléculas."
+    )
+    threshold = st.slider(
+        "Umbral operativo de RMSE / σ local",
+        min_value=0.5,
+        max_value=6.0,
+        value=2.5,
+        step=0.1,
+        help="Razón adimensional entre RMSE de residuos y σ aproximada por MAD de primeras diferencias.",
+    )
+    noise_view = enrich_evidence_with_residual_rmse(evidence)
+    noise_view["estado_residuo"] = np.select(
+        [
+            noise_view["rmse_en_sigmas"].isna(),
+            noise_view["rmse_en_sigmas"] > threshold,
+        ],
+        ["No evaluable", "Sobre el umbral"],
+        default="Dentro del umbral",
+    )
+    counts = noise_view["estado_residuo"].value_counts()
+    metrics = st.columns(3)
+    metrics[0].metric("Sobre el umbral", int(counts.get("Sobre el umbral", 0)))
+    metrics[1].metric("Dentro del umbral", int(counts.get("Dentro del umbral", 0)))
+    metrics[2].metric("No evaluable", int(counts.get("No evaluable", 0)))
+
+    status_colors = {
+        "Sobre el umbral": "#ffbd69",
+        "Dentro del umbral": "#60d7c5",
+        "No evaluable": "#8a9aa8",
+    }
+    distribution = counts.rename_axis("estado_residuo").reset_index(name="perfiles")
+    distribution = distribution.loc[distribution["perfiles"] > 0]
+    fig_donut = px.pie(
+        distribution,
+        names="estado_residuo",
+        values="perfiles",
+        hole=0.66,
+        color="estado_residuo",
+        color_discrete_map=status_colors,
+    )
+    fig_donut.update_traces(
+        textinfo="value+percent",
+        textposition="inside",
+        marker=dict(line=dict(color="#071522", width=3)),
+        hovertemplate="%{label}: %{value} perfiles (%{percent})<extra></extra>",
+    )
+    fig_donut.update_layout(
+        showlegend=False,
+        title="Distribución de perfiles",
+        annotations=[dict(
+            text=f"<b>{len(noise_view)}</b><br>perfiles",
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=17, color="#d7e4ea"),
+        )],
+    )
+
+    plotted = noise_view.dropna(subset=["rmse_en_sigmas"]).copy()
+    chart_col, scatter_col = st.columns([0.9, 2.1], gap="large")
+    with chart_col:
+        st.markdown("#### Resumen al umbral seleccionado")
+        st.plotly_chart(plot_layout(fig_donut, 350), width="stretch")
+        st.caption("Turquesa: dentro del umbral · ámbar: sobre el umbral · gris: no evaluable.")
+
+    if not plotted.empty:
+        fig_noise = px.scatter(
+            plotted,
+            x="rmse_en_sigmas",
+            y="grupo_rasgo",
+            color="estado_residuo",
+            hover_name="especie",
+            hover_data={
+                "grupo_rasgo": True,
+                "ventana": True,
+                "posicion": True,
+                "rmse_residuos_Jy_beam": ":.4f",
+                "sigma_ruido_aprox_Jy_beam": ":.4f",
+                "rmse_en_sigmas": ":.2f",
+                "estado_residuo": True,
+            },
+            color_discrete_map=status_colors,
+            title="Residuos del ajuste frente al umbral operativo",
+        )
+        fig_noise.add_vline(
+            x=threshold,
+            line_dash="dash",
+            line_color="#f2a7ff",
+            annotation_text=f"umbral = {threshold:.1f}σ",
+            annotation_position="top right",
+        )
+        fig_noise.update_layout(
+            xaxis_title="RMSE residual / σ local (adimensional)",
+            yaxis_title="Grupo de rasgo espectral",
+            showlegend=False,
+        )
+        with scatter_col:
+            st.markdown("#### Diagnóstico por rasgo")
+            st.plotly_chart(plot_layout(fig_noise, max(420, 52 * len(plotted))), width="stretch")
+            st.caption("Pasa el cursor para ver especie, ventana, extracción y medidas. El marcador no estima la probabilidad de identidad molecular.")
+    else:
+        with scatter_col:
+            st.warning("No se pudo calcular el RMSE para los perfiles disponibles.")
+
+    noise_columns = [
+        "especie", "grupo_rasgo", "ventana", "posicion",
+        "rmse_residuos_Jy_beam", "sigma_ruido_aprox_Jy_beam",
+        "rmse_en_sigmas", "estado_residuo",
+    ]
+    st.markdown("#### Tabla de diagnóstico")
+    st.dataframe(noise_view[noise_columns], width="stretch", hide_index=True)
+    st.download_button(
+        "Descargar diagnóstico de residuos",
+        noise_view[noise_columns].to_csv(index=False).encode("utf-8"),
+        "clasificacion_residuos.csv",
+        "text/csv",
+    )
+    st.info(
+        "El RMSE se calcula sobre una gaussiana con baseline en canales con velocidad derivada entre 0 y 5 km/s. "
+        "Se normaliza con σ robusta aproximada de la extracción para evitar un umbral fijo dependiente de Jy/beam. "
+        "Un residuo elevado puede reflejar blends, baseline imperfecto, perfil no gaussiano o ruido; no identifica por sí mismo una línea molecular. "
+        "La correlación entre canales y los grados de libertad efectivos no se modelan, por lo que el umbral no debe interpretarse como una prueba estadística formal."
+    )
+
+
 elif page == "Método paso a paso":
     st.subheader("De los datos calibrados al estado de evidencia")
     st.write("Esta sección documenta qué transforma el análisis y qué queda pendiente. Abre los pasos para ver las ecuaciones y los supuestos.")
@@ -252,10 +624,18 @@ elif page == "Método paso a paso":
         st.write("El gráfico principal centra cada candidata en una escala local en MHz. El residuo indica concordancia con la velocidad sistémica adoptada, pero no es independiente de los datos de ajuste ni una incertidumbre estadística.")
     with st.expander("4 · Ruido robusto, ajuste y SNR"):
         st.write("La sigma aproximada usa la dispersión robusta (MAD) de primeras diferencias dividida entre √2. El perfil se ajusta localmente con componente gaussiana y baseline. El SNR es contraste local aproximado. Correlación entre canales, baseline imperfecto, blends y selección de ventanas pueden alterar su valor; no debe interpretarse como significancia global.")
+    with st.expander("4b · Diagnóstico del residuo del ajuste"):
+        st.latex(r"\mathrm{RMSE}=\sqrt{\frac{1}{N}\sum_i (I_i-\hat I_i)^2},\qquad R_{\rm resid}=\frac{\mathrm{RMSE}}{\sigma_{\rm aprox}}")
+        st.write("La página **Clasificación de ruido** compara el RMSE de un ajuste gaussiano con baseline en 0–5 km/s contra la sigma aproximada por MAD de primeras diferencias de la extracción. El deslizador solo cambia una etiqueta operativa para ayudar a inspeccionar perfiles. RMSE/σ no es una probabilidad ni una prueba formal de bondad de ajuste: no se modelan covarianza entre canales, grados de libertad efectivos ni la incertidumbre del modelo.")
     with st.expander("5 · Área integrada y agrupación"):
         st.write("El área se aproxima integrando el perfil sobre el ancho seleccionado; su error aproximado no incluye correlación, calibración ni incertidumbre de modelo. Varias transiciones pueden asociarse al mismo grupo de rasgo: 107 asociaciones del catálogo se agruparon en 64 rasgos, por lo que asociación no significa detección independiente.")
     with st.expander("6 · Qué exige una identificación más fuerte"):
         st.write("Buscar múltiples transiciones no confundidas de la misma especie, modelar blends y alternativas, reportar incertidumbres de frecuencia y parámetros de ajuste, probar robustez a selección de baseline/ventana y comparar intensidades con un modelo de excitación/transferencia radiativa. El inventario de contaminantes también debe ser más completo.")
+    with st.expander("7 · Grado de compatibilidad de la demostración"):
+        st.latex(r"p_{\rm circ}=\frac{1+\#\{T_b\geq T_{\rm obs}\}}{1+B},\qquad q_{\rm BY}=\mathrm{ajuste\ por\ especies}")
+        st.write("El estadístico T cuenta rasgos espectrales distintos asociados a una especie. El nulo desplaza circularmente el patrón de frecuencias dentro de cada ventana y vuelve a contar coincidencias; así aproxima cuántos alineamientos pueden surgir por densidad de picos/catálogo. Los p empíricos se ajustan con Benjamini–Yekutieli entre las especies del catálogo para controlar la tasa de falsos descubrimientos bajo dependencia general.")
+        st.write("La regla operativa marca compatibilidad tentativa si hay al menos tres rasgos distintos, q≤0.05, mediana de velocidad a no más del margen elegido, dispersión robusta de velocidad ≤0.5 km/s y menos de la mitad de los rasgos compartidos con otras especies. Es una regla explícita de este proyecto, no un umbral universal; la etiqueta se mantiene tentativa porque aquí faltan intensidades modeladas, catálogo completo y separación de blends.")
+        st.warning("El valor q no es la probabilidad de que una especie sea falsa ni P(molécula | datos). En la demostración interactiva el q es condicional a los parámetros seleccionados y no corrige por recorrer el deslizador de velocidad; usa el cuaderno, con la velocidad de referencia fijada, para la tabla de grado. El nulo tampoco simula intensidades, líneas ausentes esperadas, catálogo incompleto, covarianza espectral ni transferencia radiativa.")
     st.markdown("### ¿Por qué importan los coeficientes de Einstein?")
     st.write("El coeficiente Aᵤₗ (s⁻¹) describe la probabilidad de emisión espontánea por unidad de tiempo para una transición entre niveles u y l. Junto a la degeneración estadística, energía del nivel superior, temperatura y función de partición, ayuda a predecir intensidades relativas en equilibrio local (LTE) y a modelar transferencia radiativa fuera de LTE. Por sí solo no identifica una línea: hacen falta parámetros consistentes y un modelo de la emisión.")
     st.warning("El catálogo local no entrega Aᵤₗ para estas filas. La columna log10_I_300K_nm2_MHz representa intensidad de catálogo bajo condiciones definidas; no es log10(Aᵤₗ). No rellenamos Aᵤₗ con valores inventados.")
@@ -269,6 +649,7 @@ else:
         "Centro del ajuste": "Frecuencia central del perfil usado para describir una estructura observada; no equivale automáticamente a una identificación molecular.",
         "FWHM": "Ancho a mitad de altura de un perfil gaussiano ajustado, aquí expresado en km/s.",
         "SNR": "Razón señal/ruido local aproximada para el rasgo. No representa una probabilidad de identidad o significancia global.",
+        "q empírico BY": "Valor p empírico de alineamiento contra desplazamientos circulares, ajustado por pruebas múltiples con Benjamini–Yekutieli. No es una probabilidad posterior de identidad molecular.",
         "Mezcla (blend)": "Solapamiento espectral de varias transiciones dentro del ancho instrumental o del perfil físico.",
         "Aᵤₗ (Einstein)": "Probabilidad de emisión espontánea por unidad de tiempo de la transición u→l, en s⁻¹.",
     }
@@ -280,6 +661,8 @@ else:
 - **Observaciones:** ALMA, proyecto `ADS/JAO.ALMA#2013.1.00278.S`, productos procesados ARI-L; espectros LSRK en Jy/beam.
 - **Contexto científico:** Jørgensen et al. (2016), PILS, *Astronomy & Astrophysics*, 595, A117 ([arXiv:1607.08733](https://arxiv.org/abs/1607.08733)).
 - **Catálogos moleculares:** [CDMS](https://cdms.astro.uni-koeln.de/classic/entries/) y [JPL](https://spec.jpl.nasa.gov/).
+- **Control de falsos descubrimientos:** [Miller et al. (2001), aplicación en análisis astrofísico](https://doi.org/10.1086/324109); [Benjamini & Yekutieli (2001), dependencia entre pruebas](https://doi.org/10.1214/aos/1013699998).
+- **Contexto de identificación molecular:** [Jørgensen et al. (2016), PILS](https://arxiv.org/abs/1607.08733).
 - **Archivos:** `W1_espectros.csv`, `W2_espectros.csv`, `Campos_de_evidencia.csv`, `procedencia_catalogos.json`.
 - **Reproducibilidad:** código de análisis y ajustes detallados en el cuaderno `herramientas/Inicio_AstroHack.ipynb` del repositorio de proyecto.
 """)

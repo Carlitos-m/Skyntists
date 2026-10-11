@@ -1,0 +1,13 @@
+especie,rasgos_distintos_asociados,SNR_mediana_aprox,v_mediana_kms,dispersion_v_MAD_kms,fraccion_rasgos_compartidos,nulo_mediana_rasgos,nulo_p95_rasgos,p_empirico_desplazamiento,q_BY_12_especies,grado_evidencia,interpretacion
+CH3CHO,23,16.4885,2.58256,0.306289,0.478261,13,18,0.0009995,0.01861,Compatibilidad tentativa,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+CH3CN,10,44.9063,2.61597,0.0673153,0.2,3,5,0.00049975,0.01861,Compatibilidad tentativa,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+C2H5CN,14,12.9668,2.63232,0.723309,0.5,8,12,0.013993,0.173693,Sin evidencia suficiente en esta prueba,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+Glycine-I,12,14.5193,2.34274,0.532832,0.333333,8,12,0.0764618,0.711831,Sin evidencia suficiente en esta prueba,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+CH2(OH)CHO,8,10.7282,2.73279,0.644995,0.75,5,8,0.109445,0.815116,Sin evidencia suficiente en esta prueba,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+C2H5OH,8,19.9305,2.88586,0.392567,0.625,7,10,0.343328,1,Sin evidencia suficiente en esta prueba,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+CH3OH,3,10.2677,2.70251,0.150181,0.333333,3,5,0.621189,1,Sin evidencia suficiente en esta prueba,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+CH3NH2,2,44.905,3.34319,0.311693,0,2,5,0.733133,1,Sin evidencia suficiente en esta prueba,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+CH3OCH3,2,18.6853,3.46439,0.369847,1,2,4,0.71964,1,Sin evidencia suficiente en esta prueba,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+NH2CHO,2,18.2238,2.95542,0.394313,0,2,4,0.673663,1,Sin evidencia suficiente en esta prueba,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+H2CO,0,,,,,0,1,1,1,Sin evidencia suficiente en esta prueba,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
+HCOOH,0,,,,,1,2,1,1,Sin evidencia suficiente en esta prueba,q ajustado evalúa alineación de frecuencias bajo el nulo circular; no es P(molécula|datos).
