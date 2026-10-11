@@ -37,7 +37,7 @@ El cuaderno `herramientas/Inicio_AstroHack.ipynb` valida los CSV contra extracci
 
 ## Estructura
 
-- `app.py`: app Streamlit.
+- `streamlit_app.py`: app Streamlit.
 - `herramientas/Inicio_AstroHack.ipynb`: análisis reproducible.
 - `espectros/`: espectros calibrados W1/W2 usados por notebook y app.
 - `cubos/`: cubos FITS para validar la extracción en el notebook.
