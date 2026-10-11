@@ -31,7 +31,7 @@ El notebook valida columnas, frecuencia monótona y cobertura; grafica W1/W2 y b
 
 Para B se adopta provisionalmente $v_{radio}=2.7$ km/s, como propone la guía, con ±1 km/s como margen de exploración. La comparación aplica una sola vez $\nu_{obs}=\nu_{rest}(1-v/c)$. Se combina el margen de velocidad, el error espectroscópico disponible y medio canal para asociar picos. Incertidumbres de catálogo nulas o ausentes no se interpretan como exactas. Las filas que apuntan al mismo máximo son un solo rasgo, no evidencia múltiple. Se ajusta una gaussiana más baseline constante cerca de cada frecuencia esperada; FWHM y área integrada describen el perfil, pero no prueban la identidad química.
 
-\begin{figure}[ht]
+\begin{figure}[!htbp]
 \centering
 \IfFileExists{figuras/espectros_completos.png}{\includegraphics[width=.95\linewidth]{figuras/espectros_completos.png}}{\fbox{Ejecutar el notebook para generar figuras/espectros\_completos.png}}
 \caption{Espectros de las posiciones A, B\_pico y B\_offset entregadas. Las amplitudes entre ventanas no son directamente comparables: los haces difieren.}
@@ -57,7 +57,7 @@ CH$_3$CHO & W2; 349755.7020 & 349753.005 & 2.32 & 48.2 & Compatible; blend/ancho
 
 El catálogo y la transición de cada renglón se identifican por especie y entrada CDMS 41505; la confianza es intermedia en la asociación de frecuencia y baja en la identificación molecular, porque no se comparó un catálogo exhaustivo ni un modelo radiativo. El SNR describe contraste local, no confianza química. Estas seis asociaciones justifican mantener ambas moléculas como hipótesis tentativas para el reto, no como detecciones confirmadas. En particular, los centros ajustados corresponden a velocidades radio cercanas pero no idénticas; un modelo global debería estimar velocidad y anchura de varias líneas limpias conjuntamente. Cerca de 348963.349 MHz hay una coincidencia con una transición de glicina-I, pero coexisten alternativas de catálogo y el registro no se distingue de forma independiente; la decisión registrada es insuficiente. El CSV conserva ese resultado negativo para hacer auditable la selección.
 
-\begin{figure}[ht]
+\begin{figure}[!htbp]
 \centering
 \IfFileExists{figuras/perfiles_candidatos.png}{\includegraphics[width=.9\linewidth]{figuras/perfiles_candidatos.png}}{\fbox{Ejecutar el notebook para generar los perfiles}}
 \caption{Perfiles locales de seis rasgos tentativos. La línea sólida es el ajuste gaussiano descriptivo; las coincidencias de catálogo no establecen por sí mismas identidad molecular.}
@@ -68,8 +68,24 @@ El coeficiente de Einstein $A_{ij}$ (s$^{-1}$) expresa la probabilidad por unida
 
 Las principales limitaciones son el catálogo educativo no exhaustivo, mezcla de líneas, baseline local, posible correlación de canales, incertidumbre de velocidad y calibración, y haces distintos entre ventanas. No se infieren abundancias, temperatura ni presencia de vida. Un siguiente análisis debe medir ruido en varios segmentos sin línea, revisar todos los residuos, ajustar componentes mezclados y verificar transiciones independientes con datos espectroscópicos completos.
 
-\section{Reproducibilidad y uso de IA}
-Ejecutar \texttt{herramientas/Inicio\_AstroHack.ipynb} desde el paquete. El cuaderno genera \texttt{Entregables/Campos\_de\_evidencia.csv} y gráficos en \texttt{Entregables/figuras/}. OpenAI Codex ayudó a automatizar partes del notebook, organizar las mediciones y figuras y proponer texto para el reporte. El equipo debe declarar qué contenido conserva y verificarlo; la validación automática CSV–FITS comprueba consistencia de extracción, no interpretación química independiente. Las contribuciones individuales están pendientes de completar por cada integrante en CONTRIBUCIONES.md. La presentación, el CSV y el notebook deben revisarse por el equipo antes de defender. Los resultados se basan únicamente en los archivos suministrados.
+\section{Reproducibilidad, uso de IA y contribuciones}
+Ejecutar \texttt{herramientas/Inicio\_AstroHack.ipynb} desde el paquete. El cuaderno genera \texttt{Entregables/Campos\_de\_evidencia.csv} y las figuras guardadas en \texttt{Entregables/figuras/}. La validación automática CSV--FITS comprueba consistencia de extracción; no constituye una interpretación química independiente.
+
+\textbf{Asistencia de inteligencia artificial.} Se utilizaron herramientas de IA como apoyo al desarrollo. Sus aportaciones se describen por función; las decisiones científicas, la selección final de resultados y la verificación de los productos son responsabilidad del equipo.
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+Herramienta & Apoyo utilizado\\
+\midrule
+ChatGPT & Automatización de partes del código del proyecto.\\
+Claude & Apoyo a la investigación y a la estructuración de archivos CSV.\\
+GitHub Copilot & Autocompletado y corrección de errores en el código.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Contribuciones individuales.} -- Pendiente de completar -- :/
 
 \small
 \textbf{Referencias.} Jørgensen et al. (2016), A\&A, 595, A117, \href{https://arxiv.org/abs/1607.08733}{PILS}; CDMS, \href{https://cdms.astro.uni-koeln.de/classic/entries/}{catálogo}; JPL, \href{https://spec.jpl.nasa.gov/}{molecular spectroscopy}; ALMA Science Archive, datos ADS/JAO.ALMA\#2013.1.00278.S, procesamiento ARI-L. Procedencia de catálogos y entradas: \texttt{catalogos/procedencia\_catalogos.json}. Reconocimiento ALMA: \href{https://almascience.eso.org/alma-data/publication-acknowledgement}{política oficial de publicaciones}.

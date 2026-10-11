@@ -1,11 +1,13 @@
 # Fdb version 4
-["pdflatex"] 1791714274.23645 "reporte.tex" "build/reporte.pdf" "reporte" 1791714276.93478 0
-  "build/reporte.aux" 1791714276 1445 b37ee51ff573e3ede2ef5ee57b67a642 "pdflatex"
-  "build/reporte.out" 1791714276 821 63df3b9a2d43b9cff9ed5e81d31de787 "pdflatex"
+["pdflatex"] 1791724209.40685 "c:/Users/agent/OneDrive/Pictures/AstroHack/Skyntists/Entregables/reporte.tex" "build/reporte.pdf" "reporte" 1791724212.51295 0
+  "build/reporte.aux" 1791724212 1461 99dffbd11fb7e3a4133314d3ff1e2153 "pdflatex"
+  "build/reporte.out" 1791724212 904 81d3f9351765c3709223b89fb654435c "pdflatex"
+  "c:/Users/agent/OneDrive/Pictures/AstroHack/Skyntists/Entregables/reporte.tex" 1791724204 9077 01a9d5b70460ab68124d5ab33ab47ccd ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1784297867 2971 def0b6c1f0b107b3b936def894055589 ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1784297867 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "c:/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1784304772 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/ecbx0900.tfm" 1784302080 3584 1a7de6c99457381c64abc1a7c545505f ""
+  "c:/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/ecbx1000.tfm" 1784302080 3584 2d666ecf6d466d8b007246bc2f94d9da ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/ecbx1440.tfm" 1784302080 3584 13049b61b922a28b158a38aeff75ee9b ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/ecrm0900.tfm" 1784302080 3584 d3d8ac8b25ca19c0a40b86a5db1e8ccc ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/ecrm1000.tfm" 1784302080 3584 adb004a0c8e7c46ee66cad73671f37b4 ""
@@ -31,6 +33,7 @@
   "c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1784293083 32569 5e5ddc8df908dea60932f3c484a54c0d ""
   "c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb" 1784293083 32716 08e384dc442464e7285e891af9f45947 ""
   "c:/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfbx0900.pfb" 1784297868 143961 fe73b0de40bc9eebafe5b31a39c455e0 ""
+  "c:/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb" 1784297868 145408 bcd327f112f643a875638eafb48d1d8b ""
   "c:/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb" 1784297868 135942 aecb5af344df420d6ec421db27dedf62 ""
   "c:/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfrm0900.pfb" 1784297868 149037 59d73c34fca02636f548728608edd111 ""
   "c:/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb" 1784297868 138258 6525c253f16cededa14c7fd0da7f67b2 ""
@@ -96,7 +99,7 @@
   "c:/texlive/2026/texmf.cnf" 1784327356 713 e69b156964470283e0530f5060668171 ""
   "figuras/espectros_completos.png" 1791712679 557779 e0e64985f0adcaca38f84afc94f7154c ""
   "figuras/perfiles_candidatos.png" 1791714156 350971 7e23a87f2b0b4ed87c3d2ea1c901a3db ""
-  "reporte.tex" 1791714156 8739 0a3e972e283ad4565ee357e05f4435c8 ""
+  "reporte.tex" 1791724204 9077 01a9d5b70460ab68124d5ab33ab47ccd ""
   (generated)
   "build/reporte.aux"
   "build/reporte.log"
