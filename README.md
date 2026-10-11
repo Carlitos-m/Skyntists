@@ -12,22 +12,17 @@ Requiere Python 3.11+ y `uv`. Desde la raíz del repositorio:
 
 ```bash
 uv sync
-uv run streamlit run app.py
+uv run streamlit run streamlit_app.py
 ```
 
 Abre la URL local que imprime Streamlit (normalmente `http://localhost:8501`). Si se usa pip en vez de uv, instala las dependencias declaradas en `pyproject.toml`. La aplicación lee los CSV de `espectros/` y `Entregables/Campos_de_evidencia.csv`; no necesita FITS para la visualización.
 
 ### Publicación global
 
-Plataforma recomendada: [Streamlit Community Cloud](https://share.streamlit.io/), que ejecuta Streamlit directamente desde una rama de GitHub y admite `uv.lock` para resolver el entorno. Pasos:
+- **App pública:** [skyntists-astrohack.streamlit.app](https://skyntists-astrohack.streamlit.app/)
+- **Repositorio público de despliegue:** [YarekAlejandro/skyntists-streamlit](https://github.com/YarekAlejandro/skyntists-streamlit)
 
-1. Asegurar que la rama publicada del repositorio contiene `app.py`, `pyproject.toml`, `uv.lock`, `espectros/W1_espectros.csv`, `espectros/W2_espectros.csv` y `Entregables/Campos_de_evidencia.csv`.
-2. En Community Cloud, conectar GitHub y crear una app indicando repositorio, rama y `app.py` como archivo de entrada.
-3. Elegir una URL `*.streamlit.app`; la app se actualizará cuando cambien los archivos de esa rama.
-
-El repositorio tiene un remoto GitHub configurado. La cuenta usada por esta sesión no pudo leer los metadatos del repo por el conector (GitHub respondió 404), así que no fue posible configurar el servicio ni verificar permisos de despliegue desde aquí. La publicación requiere que Community Cloud tenga acceso al repositorio; si es privado, se debe autorizar ese acceso desde la cuenta del equipo.
-
-Vercel no es la opción elegida para alojar **el servidor Streamlit**: aunque Vercel incorporó soporte WebSocket en beta para Functions, Streamlit está pensado para ejecutarse como una aplicación Streamlit completa. Community Cloud reduce la adaptación y es el flujo de despliegue documentado por Streamlit. Vercel sí sería una opción si después se crea un frontend independiente (por ejemplo React) que consuma un backend adecuado.
+`public_streamlit_repo/` replica el paquete autosuficiente publicado: incluye la app y los CSV necesarios para visualizarla, sin cubos FITS ni la presentación `.pptx`. Streamlit Community Cloud ejecuta Streamlit directamente desde GitHub y acepta dependencias con `requirements.txt` ([guía de despliegue](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy), [dependencias](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies)).
 
 ## Análisis científico reproducible
 
@@ -37,7 +32,8 @@ El cuaderno `herramientas/Inicio_AstroHack.ipynb` valida los CSV contra extracci
 
 ## Estructura
 
-- `app.py`: app Streamlit.
+- `streamlit_app.py`: app Streamlit para ejecutar desde el repositorio privado.
+- `public_streamlit_repo/`: paquete mínimo para alojar la app desde un repo público.
 - `herramientas/Inicio_AstroHack.ipynb`: análisis reproducible.
 - `espectros/`: espectros calibrados W1/W2 usados por notebook y app.
 - `cubos/`: cubos FITS para validar la extracción en el notebook.
