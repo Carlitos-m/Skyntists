@@ -1,0 +1,13 @@
+[project]
+name = "skyntists"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "astropy",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "plotly-express>=0.4.1",
+    "scipy",
+    "streamlit>=1.65.0",
+]

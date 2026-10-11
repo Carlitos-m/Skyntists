@@ -1,14 +1,76 @@
-\documentclass{article}
-\usepackage{graphicx} % Required for inserting images
-
-\title{Reporte AstroHack - Skyntists}
-\author{Yarek Alejandro Olivares Meneses, Angel Gabriel Jiménez Isidro, Carlos Manuel Martínez Hernández, Luis Gustavo Cons}
-\date{October 2026}
-
+\documentclass[10pt]{article}
+\usepackage[spanish,mexico]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{margin=1.7cm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+\usepackage{microtype}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\title{Búsqueda de moléculas de interés prebiótico en IRAS 16293--2422}
+\author{Equipo Skyntists\\Angel Gabriel Jiménez Isidro\\Carlos Manuel Martínez Hernández\\Luis Gustavo Cons\\\small Yarek Alejandro Olivares Meneses}
+\date{AstroHack SATEM 2026}
 \begin{document}
-
 \maketitle
+\vspace{-1.2em}
+\begin{abstract}
+Analizamos las extracciones calibradas B\_offset de dos ventanas ALMA (W1 y W2) hacia la región de formación estelar IRAS 16293--2422 B. El cuaderno reproducible busca perfiles, compara frecuencias con el catálogo educativo CDMS/JPL y mide rasgos con ajustes gaussianos locales. Seis perfiles son compatibles con transiciones de acetonitrilo (CH$_3$CN) y acetaldehído (CH$_3$CHO), pero la congestión y el alcance limitado del catálogo impiden tratarlos como identificaciones confirmadas. Una coincidencia cercana a glicina-I se declara insuficiente. El resultado principal es un flujo de evidencia revisable, no una detección definitiva.
+\end{abstract}
 
-\section{Introduction}
+\section{Pregunta y datos}
+¿Muestran los espectros entregados rasgos compatibles con varias transiciones de moléculas de interés prebiótico? Usamos los productos procesados ARI-L del proyecto ADS/JAO.ALMA\#2013.1.00278.S y los archivos \texttt{W1\_espectros.csv} y \texttt{W2\_espectros.csv}. Cada espectro contiene 1918 canales con paso aproximado de 0.2441 MHz; las frecuencias están en LSRK y las intensidades en Jy/beam. Se estudia B\_offset, posición recomendada por la guía. Estos productos educativos ya están calibrados, pero no equivalen a una reducción independiente ni a una validación para publicación.
 
+\section{Procedimiento reproducible}
+El notebook valida columnas, frecuencia monótona y cobertura; grafica W1/W2 y busca máximos con prominencia. Estima un ruido aproximado mediante MAD de diferencias entre canales vecinos dividido por $\sqrt{2}$. Los canales pueden estar correlacionados y las líneas afectan esta estimación; por ello, el SNR comunicado es orientativo, no una significancia estadística final. Se recomienda revisar regiones line-free, residuos y baseline en cada perfil.
+
+Para B se adopta provisionalmente $v_{radio}=2.7$ km/s, como propone la guía, con ±1 km/s como margen de exploración. La comparación aplica una sola vez $\nu_{obs}=\nu_{rest}(1-v/c)$. Se combina el margen de velocidad, el error espectroscópico disponible y medio canal para asociar picos. Incertidumbres de catálogo nulas o ausentes no se interpretan como exactas. Las filas que apuntan al mismo máximo son un solo rasgo, no evidencia múltiple. Se ajusta una gaussiana más baseline constante cerca de cada frecuencia esperada; FWHM y área integrada describen el perfil, pero no prueban la identidad química.
+
+\begin{figure}[ht]
+\centering
+\IfFileExists{figuras/espectros_completos.png}{\includegraphics[width=.95\linewidth]{figuras/espectros_completos.png}}{\fbox{Ejecutar el notebook para generar figuras/espectros\_completos.png}}
+\caption{Espectros de las posiciones A, B\_pico y B\_offset entregadas. Las amplitudes entre ventanas no son directamente comparables: los haces difieren.}
+\end{figure}
+
+\section{Resultados}
+La búsqueda local produjo 64 rasgos candidatos (34 en W1 y 30 en W2) asociados a 107 filas de catálogo bajo los márgenes configurados. La diferencia refleja blends y coincidencias múltiples, no 107 detecciones. Se seleccionaron tres rasgos para cada hipótesis de trabajo; sus frecuencias medidas y anchos aparecen en la tabla. Los ajustes se guardan como PNG y cada fila del CSV enlaza su figura.
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{@{}l l r r r X@{}}
+\toprule
+Hipótesis & Ventana; $\nu_{rest}$ (MHz) & Pico LSRK (MHz) & FWHM (km/s) & SNR aprox. & Evaluación\\
+\midrule
+CH$_3$CN & W1; 349024.9709 & 349021.937 & 1.02 & 25.8 & Compatible; blend posible\\
+CH$_3$CN & W1; 349125.2874 & 349122.257 & 1.17 & 34.2 & Compatible; alternativa cercana\\
+CH$_3$CN & W2; 349346.3430 & 349343.491 & 1.92 & 58.1 & Compatible; baseline negativo\\
+CH$_3$CHO & W1; 348855.5714 & 348852.530 & 1.14 & 44.4 & Compatible; blend posible\\
+CH$_3$CHO & W2; 349320.3515 & 349317.491 & 1.27 & 48.3 & Compatible; alternativa cercana\\
+CH$_3$CHO & W2; 349755.7020 & 349753.005 & 2.32 & 48.2 & Compatible; blend/ancho mayor\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+El catálogo y la transición de cada renglón se identifican por especie y entrada CDMS 41505; la confianza es intermedia en la asociación de frecuencia y baja en la identificación molecular, porque no se comparó un catálogo exhaustivo ni un modelo radiativo. El SNR describe contraste local, no confianza química. Estas seis asociaciones justifican mantener ambas moléculas como hipótesis tentativas para el reto, no como detecciones confirmadas. En particular, los centros ajustados corresponden a velocidades radio cercanas pero no idénticas; un modelo global debería estimar velocidad y anchura de varias líneas limpias conjuntamente. Cerca de 348963.349 MHz hay una coincidencia con una transición de glicina-I, pero coexisten alternativas de catálogo y el registro no se distingue de forma independiente; la decisión registrada es insuficiente. El CSV conserva ese resultado negativo para hacer auditable la selección.
+
+\begin{figure}[ht]
+\centering
+\IfFileExists{figuras/perfiles_candidatos.png}{\includegraphics[width=.9\linewidth]{figuras/perfiles_candidatos.png}}{\fbox{Ejecutar el notebook para generar los perfiles}}
+\caption{Perfiles locales de seis rasgos tentativos. La línea sólida es el ajuste gaussiano descriptivo; las coincidencias de catálogo no establecen por sí mismas identidad molecular.}
+\end{figure}
+
+\section{Coeficientes de Einstein y límites}
+El coeficiente de Einstein $A_{ij}$ (s$^{-1}$) expresa la probabilidad por unidad de tiempo de emisión espontánea entre niveles. En modelos de excitación y transferencia radiativa, junto con degeneraciones, energías, temperatura y función de partición, ayuda a predecir intensidades relativas. No es un identificador por sí mismo. La documentación del catálogo local advierte que no incluye $A_{ij}$ y que \texttt{log10\_I\_300K\_nm2\_MHz} no es $\log_{10}(A_{ij})$. Por tanto, no inferimos coeficientes ni intensidades observadas a partir de esa columna. Una ampliación rigurosa recuperaría parámetros de la entrada CDMS/JPL exacta, registraría versión y unidades y compararía espectros sintéticos LTE/no-LTE de múltiples transiciones.
+
+Las principales limitaciones son el catálogo educativo no exhaustivo, mezcla de líneas, baseline local, posible correlación de canales, incertidumbre de velocidad y calibración, y haces distintos entre ventanas. No se infieren abundancias, temperatura ni presencia de vida. Un siguiente análisis debe medir ruido en varios segmentos sin línea, revisar todos los residuos, ajustar componentes mezclados y verificar transiciones independientes con datos espectroscópicos completos.
+
+\section{Reproducibilidad y uso de IA}
+Ejecutar \texttt{herramientas/Inicio\_AstroHack.ipynb} desde el paquete. El cuaderno genera \texttt{Entregables/Campos\_de\_evidencia.csv} y gráficos en \texttt{Entregables/figuras/}. OpenAI Codex ayudó a automatizar partes del notebook, organizar las mediciones y figuras y proponer texto para el reporte. El equipo debe declarar qué contenido conserva y verificarlo; la validación automática CSV–FITS comprueba consistencia de extracción, no interpretación química independiente. Las contribuciones individuales están pendientes de completar por cada integrante en CONTRIBUCIONES.md. La presentación, el CSV y el notebook deben revisarse por el equipo antes de defender. Los resultados se basan únicamente en los archivos suministrados.
+
+\small
+\textbf{Referencias.} Jørgensen et al. (2016), A\&A, 595, A117, \href{https://arxiv.org/abs/1607.08733}{PILS}; CDMS, \href{https://cdms.astro.uni-koeln.de/classic/entries/}{catálogo}; JPL, \href{https://spec.jpl.nasa.gov/}{molecular spectroscopy}; ALMA Science Archive, datos ADS/JAO.ALMA\#2013.1.00278.S, procesamiento ARI-L. Procedencia de catálogos y entradas: \texttt{catalogos/procedencia\_catalogos.json}. Reconocimiento ALMA: \href{https://almascience.eso.org/alma-data/publication-acknowledgement}{política oficial de publicaciones}.
 \end{document}
