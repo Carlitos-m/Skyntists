@@ -639,7 +639,19 @@ elif page == "Método paso a paso":
     st.markdown("### ¿Por qué importan los coeficientes de Einstein?")
     st.write("El coeficiente Aᵤₗ (s⁻¹) describe la probabilidad de emisión espontánea por unidad de tiempo para una transición entre niveles u y l. Junto a la degeneración estadística, energía del nivel superior, temperatura y función de partición, ayuda a predecir intensidades relativas en equilibrio local (LTE) y a modelar transferencia radiativa fuera de LTE. Por sí solo no identifica una línea: hacen falta parámetros consistentes y un modelo de la emisión.")
     st.warning("El catálogo local no entrega Aᵤₗ para estas filas. La columna log10_I_300K_nm2_MHz representa intensidad de catálogo bajo condiciones definidas; no es log10(Aᵤₗ). No rellenamos Aᵤₗ con valores inventados.")
-
+    
+elif page == "Agrupamiento de espectros":
+    st.subheader("Agrupamiento de espectros por k-means")
+    st.write(
+    )
+    spectra = load_all_spectra()
+    if spectra.empty:
+        st.error("No se pudieron cargar los espectros para el agrupamiento.")
+    else:
+        distance_matrix = compute_distance_matrix(spectra)
+        fig_dendro = create_dendrogram(distance_matrix, labels=list(POSITIONS.keys()))
+        st.plotly_chart(plot_layout(fig_dendro, 600), width="stretch")
+        st.caption("Dendrograma de agrupamiento jerárquico basado en la similitud espectral. Las ramas más cortas indican mayor similitud entre extracciones.")
 
 else:
     st.subheader("Glosario, datos y procedencia")
