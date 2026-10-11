@@ -1,5 +1,20 @@
 # Skyntists · AstroHack SATEM 2026
 
+<p align="center">
+  <a href="https://skyntists-astrohack.streamlit.app/"><img src="https://img.shields.io/badge/Explorar-app%20interactiva-FF4B4B?logo=streamlit&logoColor=white" alt="Explorar la app interactiva"></a>
+  <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11 o posterior">
+  <img src="https://img.shields.io/badge/Análisis-espectroscopia%20molecular-5B4B8A" alt="Análisis de espectroscopia molecular">
+  <img src="https://img.shields.io/badge/Estado-exploratorio-orange" alt="Resultados exploratorios">
+</p>
+
+<p align="center">
+  <a href="https://skyntists-astrohack.streamlit.app/">
+    <img src="Entregables/figuras/espectros_completos.png" alt="Espectros W1 y W2 de IRAS 16293−2422 con rasgos espectrales observados" width="900">
+  </a>
+</p>
+
+<p align="center"><em>Espectros de las extracciones W1 y W2: intensidad observada frente a frecuencia en el marco LSRK.</em></p>
+
 Proyecto de análisis exploratorio de espectros milimétricos de **IRAS 16293−2422** y de comunicación interactiva de la evidencia molecular. Integra un cuaderno reproducible, datos espectrales, productos de análisis y una aplicación web tipo wiki.
 
 > **Alcance científico.** Los resultados son compatibilidades espectrales exploratorias, no identificaciones confirmadas. Una coincidencia molecular tampoco constituye evidencia de vida.
@@ -36,6 +51,14 @@ La interfaz usa los espectros CSV y la tabla de evidencia; no requiere cargar lo
 5. Exporta tablas y figuras que alimentan la evidencia y su visualización.
 
 El conjunto actual contiene **siete filas de evidencia**. Seis perfiles se consideran tentativamente compatibles con CH₃CN/CH₃CHO; la evidencia disponible para glicina-I es insuficiente. Esta lectura depende de la selección local de catálogo y no debe interpretarse como una probabilidad de detección. El ruido/SNR estimado con MAD es aproximado; la búsqueda de picos, las asociaciones múltiples y los ajustes descriptivos no sustituyen una evaluación estadística global ni un análisis radiativo completo.
+
+### Perfiles de candidatos
+
+La figura muestra los canales observados, un ajuste gaussiano descriptivo y la frecuencia esperada tras aplicar la velocidad sistémica adoptada. El ajuste sirve para inspección y comparación visual; por sí solo no confirma la identidad molecular.
+
+<p align="center">
+  <img src="Entregables/figuras/perfiles_candidatos.png" alt="Perfiles espectrales candidatos con datos observados, ajuste gaussiano y frecuencia esperada" width="900">
+</p>
 
 ### Coeficientes de Einstein
 
